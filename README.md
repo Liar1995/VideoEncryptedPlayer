@@ -9,3 +9,5 @@ Playing encrypted video, through the HttpServer parsing encrypted files, skip th
 
 ## Other
 There are many ways to encrypt the file stream, and you can choose the encryption method yourself, such as DES encryption ... and you need to decrypt it yourself.
+
+![sample](https://github.com/Liar1995/VideoEncryptedPlayer/blob/master/sample.png)
