@@ -23,7 +23,7 @@ class HttpServiceThread extends Thread {
         mStream = stream;
         mPort = port;
         mSocket = new ServerSocket(port);
-        mSocket.setSoTimeout(600000);
+        mSocket.setSoTimeout(0);
         if (!mSocket.getReuseAddress())
             mSocket.setReuseAddress(true);
     }

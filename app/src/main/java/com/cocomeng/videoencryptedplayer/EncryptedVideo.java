@@ -3,12 +3,15 @@ package com.cocomeng.videoencryptedplayer;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.support.v7.app.AppCompatActivity;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.GestureDetector;
@@ -47,9 +50,8 @@ import java.util.TimerTask;
  * Description:加密视频播放器
  */
 
-class EncryptedVideo implements View.OnClickListener {
+public class EncryptedVideo extends AppCompatActivity implements View.OnClickListener{
 
-    private final Activity activity;
     private HttpServer httpServer;
     private static final int MESSAGE_HIDE_CENTER_BOX = 4;
     private static final int MESSAGE_SEEK_NEW_POSITION = 3;
@@ -70,32 +72,45 @@ class EncryptedVideo implements View.OnClickListener {
     private int volume = -1;
     private long newPosition = -1;
     private float brightness = -1;
+    private String filePath;
 
-    EncryptedVideo(Activity activity) {
-        this.activity = activity;
-        mVideo = (FullScreenVideoView) activity.findViewById(R.id.videoview);
-        mPlayTime = (TextView) activity.findViewById(R.id.play_time);
-        mDurationTime = (TextView) activity.findViewById(R.id.total_time);
-        mPlay = (ImageView) activity.findViewById(R.id.play_btn);
-        mSeekBar = (SeekBar) activity.findViewById(R.id.seekbar);
-        mTopView = activity.findViewById(R.id.app_video_top_box);
-        mBottomView = activity.findViewById(R.id.app_video_bottom_box);
-        app_video_volume_box = (LinearLayout) activity.findViewById(R.id.app_video_volume_box);
-        app_video_brightness_box = (LinearLayout) activity.findViewById(R.id.app_video_brightness_box);
-        app_video_fastForward_box = (LinearLayout) activity.findViewById(R.id.app_video_fastForward_box);
-        app_video_fullscreen = (ImageView) activity.findViewById(R.id.app_video_fullscreen);
-        app_video_volume_icon = (ImageView) activity.findViewById(R.id.app_video_volume_icon);
-        app_video_volume = (TextView) activity.findViewById(R.id.app_video_volume);
-        app_video_brightness = (TextView) activity.findViewById(R.id.app_video_brightness);
-        app_video_fastForward = (TextView) activity.findViewById(R.id.app_video_fastForward);
-        app_video_fastForward_target = (TextView) activity.findViewById(R.id.app_video_fastForward_target);
-        app_video_fastForward_all = (TextView) activity.findViewById(R.id.app_video_fastForward_all);
-        mAudioManager = (AudioManager) activity.getSystemService(Context.AUDIO_SERVICE);
+    /****
+     * @param filePath  视频key或者路径
+     ***/
+    public static void inVideoActivity(Activity context, String filePath) {
+        Intent intent = new Intent(context, EncryptedVideo.class);
+        intent.putExtra("key", filePath);
+        context.startActivity(intent);
+    }
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.layout_encrypted);
+        mVideo = (FullScreenVideoView) findViewById(R.id.videoview);
+        mPlayTime = (TextView) findViewById(R.id.play_time);
+        mDurationTime = (TextView) findViewById(R.id.total_time);
+        mPlay = (ImageView) findViewById(R.id.play_btn);
+        mSeekBar = (SeekBar) findViewById(R.id.seekbar);
+        mTopView = findViewById(R.id.app_video_top_box);
+        mBottomView = findViewById(R.id.app_video_bottom_box);
+        app_video_volume_box = (LinearLayout) findViewById(R.id.app_video_volume_box);
+        app_video_brightness_box = (LinearLayout) findViewById(R.id.app_video_brightness_box);
+        app_video_fastForward_box = (LinearLayout) findViewById(R.id.app_video_fastForward_box);
+        app_video_fullscreen = (ImageView) findViewById(R.id.app_video_fullscreen);
+        app_video_volume_icon = (ImageView) findViewById(R.id.app_video_volume_icon);
+        app_video_volume = (TextView) findViewById(R.id.app_video_volume);
+        app_video_brightness = (TextView) findViewById(R.id.app_video_brightness);
+        app_video_fastForward = (TextView) findViewById(R.id.app_video_fastForward);
+        app_video_fastForward_target = (TextView) findViewById(R.id.app_video_fastForward_target);
+        app_video_fastForward_all = (TextView) findViewById(R.id.app_video_fastForward_all);
+        mAudioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         mMaxVolume = mAudioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
         mPlay.setOnClickListener(this);
         mSeekBar.setOnSeekBarChangeListener(mSeekBarChangeListener);
-        screenWidthPixels = activity.getResources().getDisplayMetrics().widthPixels;
+        screenWidthPixels = getResources().getDisplayMetrics().widthPixels;
         app_video_fullscreen.setOnClickListener(this);
+        filePath=getIntent().getStringExtra("key");
+        initServer("/storage/emulated/0/DCIM/test");
     }
 
     private SeekBar.OnSeekBarChangeListener mSeekBarChangeListener = new SeekBar.OnSeekBarChangeListener() {
@@ -148,7 +163,7 @@ class EncryptedVideo implements View.OnClickListener {
     private void playVideo(Uri uri) {
         File file = new File(uri.getPath());
         if (!file.exists()) {
-            Toast.makeText(activity, "文件不存在", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "文件不存在", Toast.LENGTH_LONG).show();
             return;
         }
         mVideo.setVideoURI(uri);
@@ -180,8 +195,8 @@ class EncryptedVideo implements View.OnClickListener {
                 mSeekBar.setProgress(0);
             }
         });
-        final GestureDetector gestureDetector = new GestureDetector(activity, new PlayerGestureListener());
-        View liveBox = activity.findViewById(R.id.app_video_box);
+        final GestureDetector gestureDetector = new GestureDetector(this, new PlayerGestureListener());
+        View liveBox = findViewById(R.id.app_video_box);
         liveBox.setClickable(true);
         liveBox.setOnTouchListener(new View.OnTouchListener() {
             @Override
@@ -201,7 +216,7 @@ class EncryptedVideo implements View.OnClickListener {
 
     private void onBrightnessSlide(float percent) {
         if (brightness < 0) {
-            brightness = activity.getWindow().getAttributes().screenBrightness;
+            brightness = getWindow().getAttributes().screenBrightness;
             if (brightness <= 0.00f) {
                 brightness = 0.50f;
             } else if (brightness < 0.01f) {
@@ -210,7 +225,7 @@ class EncryptedVideo implements View.OnClickListener {
         }
         Log.d(this.getClass().getSimpleName(), "brightness:" + brightness + ",percent:" + percent);
         app_video_brightness_box.setVisibility(View.VISIBLE);
-        WindowManager.LayoutParams lpa = activity.getWindow().getAttributes();
+        WindowManager.LayoutParams lpa = getWindow().getAttributes();
         lpa.screenBrightness = brightness + percent;
         if (lpa.screenBrightness > 1.0f) {
             lpa.screenBrightness = 1.0f;
@@ -219,7 +234,7 @@ class EncryptedVideo implements View.OnClickListener {
         }
         Log.i("Sunmeng", "lpa.screenBrightness : " + lpa.screenBrightness * 100);
         app_video_brightness.setText(((int) (lpa.screenBrightness * 100)) + "%");
-        activity.getWindow().setAttributes(lpa);
+        getWindow().setAttributes(lpa);
     }
 
     private class PlayerGestureListener extends GestureDetector.SimpleOnGestureListener {
@@ -352,7 +367,7 @@ class EncryptedVideo implements View.OnClickListener {
     private void showOrHide() {
         if (mTopView.getVisibility() == View.VISIBLE) {
             mTopView.clearAnimation();
-            Animation animation = AnimationUtils.loadAnimation(activity,
+            Animation animation = AnimationUtils.loadAnimation(this,
                     R.anim.option_leave_from_top);
             animation.setAnimationListener(new AnimationImp() {
                 @Override
@@ -364,7 +379,7 @@ class EncryptedVideo implements View.OnClickListener {
             mTopView.startAnimation(animation);
 
             mBottomView.clearAnimation();
-            Animation animation1 = AnimationUtils.loadAnimation(activity,
+            Animation animation1 = AnimationUtils.loadAnimation(this,
                     R.anim.option_leave_from_bottom);
             animation1.setAnimationListener(new AnimationImp() {
                 @Override
@@ -377,13 +392,13 @@ class EncryptedVideo implements View.OnClickListener {
         } else {
             mTopView.setVisibility(View.VISIBLE);
             mTopView.clearAnimation();
-            Animation animation = AnimationUtils.loadAnimation(activity,
+            Animation animation = AnimationUtils.loadAnimation(this,
                     R.anim.option_entry_from_top);
             mTopView.startAnimation(animation);
 
             mBottomView.setVisibility(View.VISIBLE);
             mBottomView.clearAnimation();
-            Animation animation1 = AnimationUtils.loadAnimation(activity,
+            Animation animation1 = AnimationUtils.loadAnimation(this,
                     R.anim.option_entry_from_bottom);
             mBottomView.startAnimation(animation1);
             mHandler.removeCallbacks(hideRunnable);
@@ -408,9 +423,9 @@ class EncryptedVideo implements View.OnClickListener {
     }
 
     private int getScreenOrientation() {
-        int rotation = activity.getWindowManager().getDefaultDisplay().getRotation();
+        int rotation = getWindowManager().getDefaultDisplay().getRotation();
         DisplayMetrics dm = new DisplayMetrics();
-        activity.getWindowManager().getDefaultDisplay().getMetrics(dm);
+        getWindowManager().getDefaultDisplay().getMetrics(dm);
         int width = dm.widthPixels;
         int height = dm.heightPixels;
         int orientation;
@@ -468,9 +483,9 @@ class EncryptedVideo implements View.OnClickListener {
 
     private void toggleFullScreen() {
         if (getScreenOrientation() == ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE) {
-            activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         } else {
-            activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         }
         updateFullScreenButton();
     }
@@ -486,7 +501,7 @@ class EncryptedVideo implements View.OnClickListener {
     void initServer(final String filePath) {
         File file = new File(filePath);
         if (!file.exists()) {
-            Toast.makeText(activity, "文件不存在", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "文件不存在", Toast.LENGTH_LONG).show();
             return;
         }
         httpServer = HttpServer.getInstance();
@@ -504,8 +519,8 @@ class EncryptedVideo implements View.OnClickListener {
                     String type = HttpConnection.getContentType(pathString);
                     byte[] buffer = new byte[1024 * 10];
                     InputStream mMediaInputStream = new FileInputStream(filePath);
-                    if (isEncrypted(filePath, "HelloWord")) {
-                        mMediaInputStream.skip(9);
+                    if (isEncrypted(filePath, "547fedc3a4bff6c8758987daa2a1cb84")) {
+                        mMediaInputStream.skip(32);
                     }
                     streamLen = mMediaInputStream.available();
                     if (rangS >= 0) {
@@ -545,13 +560,14 @@ class EncryptedVideo implements View.OnClickListener {
             }
         }, 8080);
         Uri uri = Uri.parse(httpServer.getHttpAddr() + "/?path=" + URLEncoder.encode(filePath));
+        Log.i("Sunmeng",uri.getPath());
         playVideo(uri);
     }
 
     private boolean isEncrypted(String filePath, String key) {
         try {
             InputStream encrypted = new FileInputStream(filePath);
-            byte[] b = new byte[9];
+            byte[] b = new byte[32];
             encrypted.read(b);
             if (!key.equals(new String(b, "UTF-8"))) {
                 encrypted.close();
@@ -566,10 +582,13 @@ class EncryptedVideo implements View.OnClickListener {
         return false;
     }
 
-    void onDestroy() {
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
         mHandler.removeMessages(0);
         mHandler.removeCallbacksAndMessages(null);
-        httpServer.stop();
+        if (httpServer != null)
+            httpServer.stop();
     }
 
     @SuppressLint("HandlerLeak")
