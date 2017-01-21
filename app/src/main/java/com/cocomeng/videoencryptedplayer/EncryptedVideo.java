@@ -110,7 +110,7 @@ public class EncryptedVideo extends AppCompatActivity implements View.OnClickLis
         screenWidthPixels = getResources().getDisplayMetrics().widthPixels;
         app_video_fullscreen.setOnClickListener(this);
         filePath=getIntent().getStringExtra("key");
-        initServer("/storage/emulated/0/DCIM/test");
+        initServer("/sdcard/DCIM/my_video.mp4");
     }
 
     private SeekBar.OnSeekBarChangeListener mSeekBarChangeListener = new SeekBar.OnSeekBarChangeListener() {
